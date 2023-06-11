@@ -53,7 +53,7 @@ def get_windows(model_file):
     }
 
 
-def evaluate_training(args):
+def evaluate_inference(args):
     pipeline_time = Value("d", 0)
     r2 = Value("d", 0)
     for attr, prefix in models_prefix.items():
@@ -125,4 +125,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    run_model(args)
+    evaluate_inference(args)
