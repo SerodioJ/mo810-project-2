@@ -42,6 +42,16 @@ class NeighbourValue(Transform):
                 paddings.append((np.abs(self._pos), 0))
         return paddings
 
+    def __pad_to_slice(self, pad):
+        slices = []
+        for t in pad:
+            sli = (
+                t[0] if t[0] else None,
+                -t[1] if t[1] else None,
+            )
+            slices.append(sli)
+        return slices
+
     def __neighbours(self, X, xp):
         return xp.roll(X, shift=-self._pos, axis=self._dim)
 
@@ -57,9 +67,15 @@ class NeighbourValue(Transform):
         )
 
     def _transform_cpu(self, X):
-        # X = np.pad(X, self.__pad_width(len(X.shape)), mode="edge")
-        # TO DO
-        return X
+        pad = self.__pad_width(len(X.shape))
+        X = np.pad(X, pad, mode="edge")
+        X = self.__neighbours(X, np)
+        slices = self.__pad_to_slice(pad)
+        return X[
+            slices[0][0] : slices[0][1],
+            slices[1][0] : slices[1][1],
+            slices[2][0] : slices[2][1],
+        ]
 
 
 class FeaturesJoin(Transform):
