@@ -1,11 +1,13 @@
 import argparse
 import csv
 import os
+from collections import namedtuple
 from glob import glob
 from pathlib import Path
 from multiprocessing import Process, Value
 from time import perf_counter
 
+import dask.array as da
 import zarr
 from sklearn.metrics import r2_score
 from dasf_seismic.attributes.complex_trace import (
@@ -31,15 +33,15 @@ attributes = {
 
 def run(run_args, attribute, time, r2):
     time.value = run_model(run_args)
-    data = zarr.load(run_args.data)
+    data = da.from_zarr(run_args.data)
     attr = attributes[attribute]()
     y_hat = attr.transform(data)
     y_pred = zarr.load(run_args.output)
-    r2.value = r2_score(y_hat, y_pred)
+    r2.value = r2_score(y_hat.flatten(), y_pred.flatten())
 
 
 def get_models(workers, prefix):
-    return glob(os.path.join("models", workers, f"{prefix}-*.json"))
+    return sorted(glob(os.path.join("models", str(workers), f"{prefix}-*.json")))
 
 
 def get_windows(model_file):
@@ -47,9 +49,9 @@ def get_windows(model_file):
     file_name = file_name.split(".")[0]
     contents = file_name.split("-")
     return {
-        "inline_window": int(contents[1]),
-        "trace_window": int(contents[2]),
-        "samples_window": int(contents[3]),
+        "inline_window": int(contents[-3]),
+        "trace_window": int(contents[-2]),
+        "samples_window": int(contents[-1]),
     }
 
 
@@ -70,14 +72,17 @@ def evaluate_inference(args):
                 ]
             )
             for model in get_models(args.workers, prefix):
+                print(model)
                 windows = get_windows(model)
                 run_args = {
                     "ml_model": model,
                     "fig_pipeline": None,
                     "output": os.path.join("data", "pred.zarr"),
+                    "data": args.data,
+                    "address": args.address,
                     **windows,
-                    **args,
                 }
+                run_args = namedtuple("args", run_args.keys())(*run_args.values())
                 pipeline_time.value = 0
                 r2.value = 0
                 p = Process(
@@ -90,9 +95,9 @@ def evaluate_inference(args):
                 time = perf_counter() - start
                 writer.writerow(
                     [
-                        windows.inline_window,
-                        windows.trace_window,
-                        windows.samples_window,
+                        windows["inline_window"],
+                        windows["trace_window"],
+                        windows["samples_window"],
                         pipeline_time.value,
                         time,
                         r2.value,

@@ -62,6 +62,8 @@ def create_pipeline(
 
 def train_model(args):
     executor = create_executor(args.address)
+    executor.client.upload_file("utils.py")
+    
     print("Creating pipeline...")
     pipeline = create_pipeline(
         executor,

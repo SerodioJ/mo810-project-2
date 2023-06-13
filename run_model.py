@@ -20,11 +20,11 @@ from utils import (
 
 def load_model(fname):
     xgboost = XGBRegressor()
-    xgboost.__xgb_cpu.load_model(fname)
-    xgboost.__xgb_mcpu.load_model(fname)
+    xgboost._XGBRegressor__xgb_cpu.load_model(fname)
+    xgboost._XGBRegressor__xgb_mcpu.load_model(fname)
     if is_gpu_supported():
-        xgboost.__xgb_gpu.load_model(fname)
-        xgboost.__xgb_mgpu.load_model(fname)
+        xgboost._XGBRegressor__xgb_gpu.load_model(fname)
+        xgboost._XGBRegressor__xgb_mgpu.load_model(fname)
     return xgboost
 
 
@@ -59,7 +59,7 @@ def create_pipeline(
     pipeline.add(features_join, **{"(i,j,k)": dataset, **neighbourhood})
     pipeline.add(reshape_features, X=features_join)
     pipeline.add(xgboost.predict, X=reshape_features)
-    pipeline.add(save_result, X=xgboost.predict)
+    pipeline.add(save_result, X=xgboost.predict, raw=dataset)
 
     if pipeline_save_location is not None:
         pipeline.visualize(filename=pipeline_save_location)
@@ -69,6 +69,8 @@ def create_pipeline(
 
 def run_model(args):
     executor = create_executor(args.address)
+    executor.client.upload_file("utils.py")
+
     print("Creating pipeline...")
     pipeline = create_pipeline(
         executor,

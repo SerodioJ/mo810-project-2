@@ -100,8 +100,6 @@ class ReshapeLabels(Transform):
     def _lazy_transform_cpu(self, X, y):
         y = y.flatten()
         y = y.rechunk(X.chunks[:-1])
-        print(f"X: {X.chunks} - {X.chunksize}")
-        print(f"y: {y.chunks} - {y.chunksize}")
         return y
 
     def _transform_cpu(self, X, y):
@@ -120,10 +118,12 @@ class SaveResult(Transform):
     def __init__(self, fname: str):
         self._fname = fname
 
-    def _lazy_transform_cpu(self, X):
+    def _lazy_transform_cpu(self, X, raw):
+        X = X.reshape(raw.shape)
         zarr.save(self._fname, X.compute())
 
-    def _transform_cpu(self, X):
+    def _transform_cpu(self, X, raw):
+        X = X.reshape(raw.shape)
         zarr.save(self._fname, X)
 
 

@@ -1,6 +1,7 @@
 import argparse
 import csv
 import os
+from collections import namedtuple
 from pathlib import Path
 from multiprocessing import Process, Value
 from time import perf_counter
@@ -22,8 +23,8 @@ configs = [
     {"inline_window": 1, "trace_window": 0, "samples_window": 0},
     {"inline_window": 0, "trace_window": 1, "samples_window": 0},
     {"inline_window": 1, "trace_window": 1, "samples_window": 1},
-    {"inline_window": 2, "trace_window": 2, "samples_window": 2},
-    {"inline_window": 3, "trace_window": 3, "samples_window": 3},
+    # {"inline_window": 2, "trace_window": 2, "samples_window": 2},
+    # {"inline_window": 3, "trace_window": 3, "samples_window": 3},
 ]
 
 
@@ -32,7 +33,7 @@ def train(train_args, time):
 
 
 def model_name(prefix, workers, x, y, z):
-    return os.path.join("models", workers, f"{prefix}-{x}-{y}-{z}.json")
+    return os.path.join("models", str(workers), f"{prefix}-{x}-{y}-{z}.json")
 
 
 def evaluate_training(args):
@@ -50,19 +51,22 @@ def evaluate_training(args):
                 ]
             )
             for config in configs:
+                print(config)
                 train_args = {
                     "attribute": attr,
                     "fig_pipeline": None,
                     "output": model_name(
                         prefix=prefix,
                         workers=args.workers,
-                        x=config.inline_window,
-                        y=config.trace_window,
-                        z=config.samples_window,
+                        x=config["inline_window"],
+                        y=config["trace_window"],
+                        z=config["samples_window"],
                     ),
+                    "data": args.data,
+                    "address": args.address,
                     **config,
-                    **args,
                 }
+                train_args = namedtuple("args", train_args.keys())(*train_args.values())
                 pipeline_time.value = 0
                 p = Process(
                     target=train,
@@ -74,9 +78,9 @@ def evaluate_training(args):
                 time = perf_counter() - start
                 writer.writerow(
                     [
-                        config.inline_window,
-                        config.trace_window,
-                        config.samples_window,
+                        config["inline_window"],
+                        config["trace_window"],
+                        config["samples_window"],
                         pipeline_time.value,
                         time,
                     ]
@@ -103,7 +107,8 @@ if __name__ == "__main__":
         "--address",
         help="Dask Scheduler address HOST:PORT",
         type=str,
-        required=True,
+        required=False,
+        default=None
     )
 
     args = parser.parse_args()
