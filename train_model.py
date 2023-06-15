@@ -11,7 +11,7 @@ from dasf.ml.xgboost import XGBRegressor
 from dasf.pipeline import Pipeline
 from dasf.pipeline.executors import DaskPipelineExecutor
 
-from utils import ZarrDataset, FeaturesJoin, SaveModel, ReshapeLabels, ReshapeFeatures, generate_neighbourhood_features, create_executor
+from utils import ZarrDataset, CreateDataFrame, SaveModel, ReshapeLabels, ReshapeFeatures, SaveIntermediate, LoadIntermediate, SplitFeatures, SplitLabel, generate_neighbourhood_features, create_executor
 
 attributes = {
     "ENVELOPE": Envelope,
@@ -36,11 +36,15 @@ def create_pipeline(
         inline_window, trace_window, samples_window
     )
 
-    features_join = FeaturesJoin()
+    features_join = CreateDataFrame()
     reshape_features = ReshapeFeatures()
     reshape_labels = ReshapeLabels()
-    xgboost = XGBRegressor()
+    xgboost = XGBRegressor(n_jobs=2)
     save_model = SaveModel(model_output)
+    # save_int = SaveIntermediate("int.zarr")
+    # load_int = LoadIntermediate("int.zarr")
+    label = SplitLabel()
+    feat = SplitFeatures()
 
     pipeline = Pipeline(
         name=f"{attribute_name} XGBoost Training Pipeline", executor=executor
@@ -49,14 +53,19 @@ def create_pipeline(
     pipeline.add(attribute, X=dataset)
     for neighbour in neighbourhood.values():
         pipeline.add(neighbour, X=dataset)
-    pipeline.add(features_join, **{"(i,j,k)": dataset, **neighbourhood})
-    pipeline.add(reshape_features, X=features_join)
-    pipeline.add(reshape_labels, X=reshape_features, y=attribute)
-    pipeline.add(xgboost.fit, X=reshape_features, y=reshape_labels)
+    pipeline.add(features_join, **{"(i,j,k)": dataset, **neighbourhood, "label": attribute})
+    # pipeline.add(reshape_features, X=features_join)
+    # pipeline.add(save_int, X=reshape_features)
+    # pipeline.add(load_int, dep=save_int)
+    # pipeline.add(reshape_labels, X=reshape_features, y=attribute)
+    # pipeline.add(save_parquet, X=reshape_features)
+    pipeline.add(label, X=features_join)
+    pipeline.add(feat, X=features_join)
+    pipeline.add(xgboost.fit, X=feat, y=label)
     pipeline.add(save_model, model=xgboost.fit)
 
     if pipeline_save_location is not None:
-        pipeline.visualize(filename=pipeline_save_location)
+        pipeline._dag_g.render(outfile=pipeline_save_location, cleanup=True)
 
     return pipeline
 
@@ -106,15 +115,15 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-i",
-        "--inline-window",
-        help="number of neighbors in inline dimension",
+        "-x",
+        "--samples-window",
+        help="number of neighbors in samples dimension",
         type=int,
         default=0,
     )
 
     parser.add_argument(
-        "-t",
+        "-y",
         "--trace-window",
         help="number of neighbors in trace dimension",
         type=int,
@@ -122,9 +131,9 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-s",
-        "--samples-window",
-        help="number of neighbors in samples dimension",
+        "-z",
+        "--inline-window",
+        help="number of neighbors in inline dimension",
         type=int,
         default=0,
     )

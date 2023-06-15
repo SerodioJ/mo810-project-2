@@ -62,7 +62,7 @@ def create_pipeline(
     pipeline.add(save_result, X=xgboost.predict, raw=dataset)
 
     if pipeline_save_location is not None:
-        pipeline.visualize(filename=pipeline_save_location)
+        pipeline._dag_g.render(outfile=pipeline_save_location, cleanup=True)
 
     return pipeline
 
@@ -108,15 +108,15 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-i",
-        "--inline-window",
-        help="number of neighbors in inline dimension",
+        "-x",
+        "--samples-window",
+        help="number of neighbors in samples dimension",
         type=int,
         default=0,
     )
 
     parser.add_argument(
-        "-t",
+        "-y",
         "--trace-window",
         help="number of neighbors in trace dimension",
         type=int,
@@ -124,9 +124,9 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-s",
-        "--samples-window",
-        help="number of neighbors in samples dimension",
+        "-z",
+        "--inline-window",
+        help="number of neighbors in inline dimension",
         type=int,
         default=0,
     )
