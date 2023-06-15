@@ -1,0 +1,8 @@
+# Jupyter
+docker run -it --rm -v ${PWD}:${PWD} -w ${PWD} -e SHELL="/bin/bash" --network=host dasf-seismic:cpu python3 -m jupyterlab --allow-root --ServerApp.port 8888 --no-browser --ServerApp.ip='0.0.0.0'
+
+# Scheduler
+docker run -it -v $(pwd):$(pwd) -e HOME=$(pwd) -w $(pwd) -u $(id -u):$(id -g) --network=host --rm dasf-seismic:cpu dask scheduler
+
+# Worker
+docker run -it -v $(pwd):$(pwd) -e HOME=$(pwd) -w $(pwd) --rm dasf-seismic:cpu dask worker <ADDRESS> --nthreads 4 --memory-limit 12GB
