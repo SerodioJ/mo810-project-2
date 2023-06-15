@@ -33,7 +33,7 @@ attributes = {
 
 def run(run_args, attribute, time, r2):
     time.value = run_model(run_args)
-    data = da.from_zarr(run_args.data)
+    data = da.from_zarr(run_args.data, chunks={0: "auto",0: "auto", 0: -1})
     attr = attributes[attribute]()
     y_hat = attr.transform(data)
     y_pred = zarr.load(run_args.output)
@@ -49,11 +49,13 @@ def get_windows(model_file):
     file_name = file_name.split(".")[0]
     contents = file_name.split("-")
     return {
-        "inline_window": int(contents[-3]),
+        "inline_window": int(contents[-1]),
         "trace_window": int(contents[-2]),
-        "samples_window": int(contents[-1]),
+        "samples_window": int(contents[-3]),
     }
 
+def model_name(prefix, workers, x, y, z, ext="png"):
+    return os.path.join("models", str(workers), f"{prefix}-run-{x}-{y}-{z}.{ext}")
 
 def evaluate_inference(args):
     pipeline_time = Value("d", 0)
@@ -80,6 +82,13 @@ def evaluate_inference(args):
                     "output": os.path.join("data", "pred.zarr"),
                     "data": args.data,
                     "address": args.address,
+                    "fig_pipeline": model_name(
+                        prefix=prefix,
+                        workers=args.workers,
+                        x=windows["samples_window"],
+                        y=windows["trace_window"],
+                        z=windows["inline_window"],
+                    ),
                     **windows,
                 }
                 run_args = namedtuple("args", run_args.keys())(*run_args.values())

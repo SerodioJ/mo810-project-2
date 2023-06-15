@@ -9,8 +9,8 @@ from time import perf_counter
 from train_model import train_model
 
 models_prefix = {
-    "ENVELOPE": "Env-ml-model",
-    "INST-FREQ": "Inst-Freq-ml-model",
+    # "ENVELOPE": "Env-ml-model",
+    # "INST-FREQ": "Inst-Freq-ml-model",
     "COS-INST-PHASE": "CIP-ml-model",
 }
 
@@ -20,11 +20,10 @@ configs = [
     {"inline_window": 0, "trace_window": 0, "samples_window": 2},
     {"inline_window": 0, "trace_window": 0, "samples_window": 3},
     {"inline_window": 0, "trace_window": 0, "samples_window": 4},
-    {"inline_window": 1, "trace_window": 0, "samples_window": 0},
-    {"inline_window": 0, "trace_window": 1, "samples_window": 0},
     {"inline_window": 1, "trace_window": 1, "samples_window": 1},
     # {"inline_window": 2, "trace_window": 2, "samples_window": 2},
-    # {"inline_window": 3, "trace_window": 3, "samples_window": 3},
+    # {"inline_window": 4, "trace_window": 4, "samples_window": 4},
+    # {"inline_window": 0, "trace_window": 0, "samples_window": 4},
 ]
 
 
@@ -32,8 +31,8 @@ def train(train_args, time):
     time.value = train_model(train_args)
 
 
-def model_name(prefix, workers, x, y, z):
-    return os.path.join("models", str(workers), f"{prefix}-{x}-{y}-{z}.json")
+def model_name(prefix, workers, x, y, z, ext="json"):
+    return os.path.join("models", str(workers), f"{prefix}-{x}-{y}-{z}.{ext}")
 
 
 def evaluate_training(args):
@@ -58,12 +57,20 @@ def evaluate_training(args):
                     "output": model_name(
                         prefix=prefix,
                         workers=args.workers,
-                        x=config["inline_window"],
+                        x=config["samples_window"],
                         y=config["trace_window"],
-                        z=config["samples_window"],
+                        z=config["inline_window"],
                     ),
                     "data": args.data,
                     "address": args.address,
+                    "fig_pipeline": model_name(
+                        prefix=prefix,
+                        workers=args.workers,
+                        x=config["samples_window"],
+                        y=config["trace_window"],
+                        z=config["inline_window"],
+                        ext="png",
+                    ),
                     **config,
                 }
                 train_args = namedtuple("args", train_args.keys())(*train_args.values())
