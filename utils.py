@@ -3,8 +3,10 @@ import dask.dataframe as ddf
 import pandas as pd
 import numpy as np
 import zarr
-import dask
+import csv
 import itertools
+
+from sklearn.metrics import r2_score
 from dasf.transforms import Transform
 from dasf.datasets import Dataset
 from dasf.pipeline.executors import DaskPipelineExecutor
@@ -68,15 +70,6 @@ class NeighbourValue(Transform):
             boundary="nearest",
             meta=np.array(()),
         )
-        pad = self.__pad_width(len(X.shape))
-        X = da.pad(X, pad, mode="edge")
-        X = self.__neighbours(X, da)
-        slices = self.__pad_to_slice(pad)
-        return X[
-            slices[0][0] : slices[0][1],
-            slices[1][0] : slices[1][1],
-            slices[2][0] : slices[2][1],
-        ]
 
     def _transform_cpu(self, X):
         pad = self.__pad_width(len(X.shape))
@@ -97,8 +90,9 @@ class FeaturesJoin(Transform):
     def _transform_cpu(self, **features):
         return np.stack(features.values(), axis=-1)
 
+
 class CreateDataFrame(Transform):
-    def __init__(self, fname = "test.parquet"):
+    def __init__(self, fname="test.parquet"):
         self.fname = fname
 
     def _shuffle(self, chunk):
@@ -107,20 +101,19 @@ class CreateDataFrame(Transform):
         return chunk[index]
 
     def _lazy_transform_cpu(self, **features):
-        data =  da.stack(features.values(), axis=-1)
+        data = da.stack(features.values(), axis=-1)
         data = data.reshape(-1, data.shape[-1])
 
         # rechunk and shuffle
         data = data.rechunk({0: 5_000_000, 1: -1})
         data = data.map_blocks(self._shuffle)
-        
-        df = ddf.from_dask_array(data, columns=features.keys())
-        print("Writing to disk")
-        df.to_parquet(self.fname)
-        print("Reading")
-        df = ddf.read_parquet(self.fname)
-        return df
 
+        df = ddf.from_dask_array(data, columns=features.keys())
+        # print("Writing to disk")
+        # df.to_parquet(self.fname)
+        # print("Reading")
+        # df = ddf.read_parquet(self.fname)
+        return df
 
     def _transform_cpu(self, **features):
         data = np.stack(features.values(), axis=-1)
@@ -129,15 +122,14 @@ class CreateDataFrame(Transform):
         return df
 
 
-
 def chunks_merge(chunks):
     new_chunks = []
     for comb in itertools.product(*reversed(chunks)):
         new_chunks.append(np.product(comb))
     return tuple(new_chunks)
 
+
 class ReshapeFeatures(Transform):
-    
     def _lazy_transform_cpu(self, X):
         X = X.reshape(-1, X.shape[-1])
         X = X.rechunk({0: "auto", 1: -1})
@@ -148,7 +140,6 @@ class ReshapeFeatures(Transform):
 
 
 class ReshapeLabels(Transform):
-
     def _lazy_transform_cpu(self, X, y):
         y = y.flatten()
         y = y.rechunk(X.chunks[:-1])
@@ -157,27 +148,34 @@ class ReshapeLabels(Transform):
     def _transform_cpu(self, X, y):
         return y.flatten()
 
+
 class SplitFeatures(Transform):
-
-    def _split(self, chunk):
-        return chunk[:-1]
+    def __init__(self, feature_set=None, label="label"):
+        self._feature_set = feature_set
+        self._label = label
 
     def _lazy_transform_cpu(self, X):
-        return X[X.columns.difference(["label"])]
+        if self._feature_set:
+            return X[self._feature_set]
+        return X[X.columns.difference([self._label])]
 
     def _transform_cpu(self, X):
-        return X[X.columns.difference(["label"])]
-    
+        if self._feature_set:
+            return X[self._feature_set]
+        return X[X.columns.difference([self._label])]
+
+
 class SplitLabel(Transform):
-    def _split(self, chunk):
-        return chunk[-1:]
-    
+    def __init__(self, label="label"):
+        self._label = label
+
     def _lazy_transform_cpu(self, X):
-        return X[["label"]]
+        return X[[self._label]]
 
     def _transform_cpu(self, X):
-        return X[["label"]]
-    
+        return X[[self._label]]
+
+
 class SaveModel(Transform):
     def __init__(self, fname: str):
         self._fname = fname
@@ -198,6 +196,7 @@ class SaveResult(Transform):
         X = X.reshape(raw.shape)
         zarr.save(self._fname, X)
 
+
 class SaveIntermediate(Transform):
     def __init__(self, fname: str):
         self._fname = fname
@@ -209,8 +208,9 @@ class SaveIntermediate(Transform):
     def _transform_cpu(self, X):
         zarr.save(self._fname, X)
 
+
 class LoadIntermediate(Dataset):
-    def __init__(self, fname: str, chunks={0:"auto", 1: -1}):
+    def __init__(self, fname: str, chunks={0: "auto", 1: -1}):
         super().__init__(name="intermediate")
         self._fname = fname
         self.chunks = chunks
@@ -224,6 +224,7 @@ class LoadIntermediate(Dataset):
     @task_handler
     def load(self, dep):
         ...
+
 
 class LoadDataFrame(Dataset):
     def __init__(self, fname: str):
@@ -240,18 +241,83 @@ class LoadDataFrame(Dataset):
     def load(self):
         ...
 
+
+class SampleDataframe(Transform):
+    def __init__(self, split, random_state=10):
+        self._split = split
+        self._random_state = random_state
+
+    def _lazy_transform_cpu(self, X):
+        return X.random_split(self._split, random_state=self._random_state)
+
+
+class TrainDataset(Transform):
+    def __init__(self, index):
+        self._index = index
+
+    def _lazy_transform_cpu(self, X):
+        return X[self._index]
+
+    def _transform_cpu(self, X):
+        return X[self._index]
+
+
+class TestDataset(Transform):
+    def __init__(self, index):
+        self._index = index
+
+    def _lazy_transform_cpu(self, X):
+        return X[self._index]
+
+    def _transform_cpu(self, X):
+        return X[self._index]
+
+
+class EvaluateModel(Transform):
+    def __init__(self, feature_set, label):
+        self._feature_set = feature_set
+        self._label = label
+
+    def transform(self, model, dataset=None):
+        y_pred = model.predict(dataset[self._feature_set])
+        return r2_score(dataset[[self._label]], y_pred)
+
+
+class DumpToCSV(Transform):
+    def __init__(self, fname, model_name, keys, num):
+        self._fname = fname
+        self._model_name = model_name
+        self._keys = keys
+        self._num = num
+
+    def transform(self, **r2_scores):
+        with open(self._fname, "a") as f:
+            writer = csv.writer(f)
+            for k in self._keys:
+                label, x, y, z = k.split("-")
+                writer.writerow(
+                    [
+                        self._model_name,
+                        label,
+                        x,
+                        y,
+                        z,
+                        *[r2_scores[f"{k}_{i}"] for i in range(self._num)]
+                    ]
+                )
+
+
 class SaveParquet(Transform):
     def __init__(self, x, y, z):
         self.x = x
         self.y = y
         self.z = z
 
-    @staticmethod   
+    @staticmethod
     def feature_name(dim, pos):
         name = ["i", "j", "k"]
         name[dim] = f"{name[dim]}{'+' if pos > 0 else '-'}{np.abs(pos)}"
         return f"({','.join(name)})"
-
 
     def _lazy_transform_cpu(self, X):
         columns = ["(i,j,k)"]
@@ -262,8 +328,6 @@ class SaveParquet(Transform):
                 columns.append(self.feature_name(dim, pos))
         df = ddf.from_dask_array(X, columns=columns)
         df.to_parquet("a.parquet")
-
-
 
 
 def generate_neighbourhood_features(

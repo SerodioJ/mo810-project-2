@@ -1,0 +1,146 @@
+{
+    "model_0": {
+        "learning_rate": 0.5,
+        "n_estimator": 10,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_1": {
+        "learning_rate": 0.5,
+        "n_estimator": 10,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_2": {
+        "learning_rate": 0.5,
+        "n_estimator": 50,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_3": {
+        "learning_rate": 0.5,
+        "n_estimator": 50,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_4": {
+        "learning_rate": 0.5,
+        "n_estimator": 100,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_5": {
+        "learning_rate": 0.5,
+        "n_estimator": 100,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_6": {
+        "learning_rate": 0.5,
+        "n_estimator": 200,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_7": {
+        "learning_rate": 0.5,
+        "n_estimator": 200,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_8": {
+        "learning_rate": 1,
+        "n_estimator": 10,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_9": {
+        "learning_rate": 1,
+        "n_estimator": 10,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_10": {
+        "learning_rate": 1,
+        "n_estimator": 50,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_11": {
+        "learning_rate": 1,
+        "n_estimator": 50,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_12": {
+        "learning_rate": 1,
+        "n_estimator": 100,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_13": {
+        "learning_rate": 1,
+        "n_estimator": 100,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_14": {
+        "learning_rate": 1,
+        "n_estimator": 200,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_15": {
+        "learning_rate": 1,
+        "n_estimator": 200,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_16": {
+        "learning_rate": 2,
+        "n_estimator": 10,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_17": {
+        "learning_rate": 2,
+        "n_estimator": 10,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_18": {
+        "learning_rate": 2,
+        "n_estimator": 50,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_19": {
+        "learning_rate": 2,
+        "n_estimator": 50,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_20": {
+        "learning_rate": 2,
+        "n_estimator": 100,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_21": {
+        "learning_rate": 2,
+        "n_estimator": 100,
+        "max_depth": 10,
+        "booster": "gbtree"
+    },
+    "model_22": {
+        "learning_rate": 2,
+        "n_estimator": 200,
+        "max_depth": 5,
+        "booster": "gbtree"
+    },
+    "model_23": {
+        "learning_rate": 2,
+        "n_estimator": 200,
+        "max_depth": 10,
+        "booster": "gbtree"
+    }
+}
