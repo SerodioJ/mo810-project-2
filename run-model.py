@@ -163,6 +163,14 @@ if __name__ == "__main__":
         default=None,
     )
 
+    parser.add_argument(
+        "-f",
+        "--fig-pipeline",
+        help="name of file to save pipeline figure",
+        type=str,
+        default=None,
+    )
+
     args = parser.parse_args()
 
     run_model(args)
