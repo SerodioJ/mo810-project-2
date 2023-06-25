@@ -10,7 +10,13 @@ from dasf_seismic.attributes.complex_trace import (
 from dasf.pipeline import Pipeline
 from dasf.pipeline.executors import DaskPipelineExecutor
 
-from utils import ZarrDataset, CreateDataFrame, generate_neighbourhood_features, create_executor
+from utils import (
+    ZarrDataset,
+    CreateDataFrame,
+    generate_neighbourhood_features,
+    create_executor,
+)
+
 
 def create_pipeline(
     executor: DaskPipelineExecutor,
@@ -19,10 +25,10 @@ def create_pipeline(
     trace_window: int,
     samples_window: int,
     output: int,
-    pipeline_save_location: str
+    pipeline_save_location: str,
 ) -> Pipeline:
     dataset = ZarrDataset(name="F3 dataset", data_path=dataset_path)
-    
+
     attributes = {
         "env": Envelope(),
         "freq": InstantaneousFrequency(),
@@ -35,9 +41,7 @@ def create_pipeline(
 
     features_join = CreateDataFrame(fname=output)
 
-    pipeline = Pipeline(
-        name="Feature Extraction Pipeline", executor=executor
-    )
+    pipeline = Pipeline(name="Feature Extraction Pipeline", executor=executor)
     pipeline.add(dataset)
     for neighbour in neighbourhood.values():
         pipeline.add(neighbour, X=dataset)
@@ -50,10 +54,11 @@ def create_pipeline(
 
     return pipeline
 
+
 def create_dataframe(args):
     executor = create_executor(args.address)
     executor.client.upload_file("utils.py")
-    
+
     print("Creating pipeline...")
     pipeline = create_pipeline(
         executor,
@@ -62,14 +67,14 @@ def create_dataframe(args):
         args.trace_window,
         args.samples_window,
         args.output,
-        args.fig_pipeline
+        args.fig_pipeline,
     )
 
     print("Executing pipeline...")
     start = perf_counter()
     pipeline.run()
     end = perf_counter()
-    
+
     print(f"Done! Execution time: {end - start:.2f} s")
     return end - start
 
@@ -114,7 +119,7 @@ if __name__ == "__main__":
         "--address",
         help="Dask Scheduler address HOST:PORT",
         type=str,
-        default=None
+        default=None,
     )
 
     parser.add_argument(
@@ -122,7 +127,7 @@ if __name__ == "__main__":
         "--fig-pipeline",
         help="name of file to save pipeline figure",
         type=str,
-        default=None
+        default=None,
     )
 
     parser.add_argument(

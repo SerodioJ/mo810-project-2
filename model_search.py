@@ -70,8 +70,7 @@ def create_pipeline(
         ]
         labels[f"{attr}-{features_id}"] = [SplitLabel(label=attr) for _ in range(4)]
         metrics[f"{attr}-{features_id}"] = [
-            EvaluateModel(feature_set=curr_feature_set, label=attr)
-            for _ in range(4)
+            EvaluateModel(feature_set=curr_feature_set, label=attr) for _ in range(4)
         ]
 
     dataframe = LoadDataFrame(fname=dataframe_path)
@@ -105,7 +104,7 @@ def create_pipeline(
             pipeline.add(dataset_label, X=persist_train[i])
             pipeline.add(model, X=dataset_feature, y=dataset_label)
             pipeline.add(metric, model=model, dataset=persist_test)
-    
+
     r2_values = {}
     for key in metrics.keys():
         for index, r2 in enumerate(metrics[key]):
@@ -120,14 +119,29 @@ def create_pipeline(
 
 
 def model_train(
-    data, attribute, feature_sets, model_name, model_kwargs, address, fig_pipeline, csv_name, ret
+    data,
+    attribute,
+    feature_sets,
+    model_name,
+    model_kwargs,
+    address,
+    fig_pipeline,
+    csv_name,
+    ret,
 ):
     executor = create_executor(address)
     executor.client.upload_file("utils.py")
 
     print("Creating pipeline...")
     pipeline = create_pipeline(
-        executor, attribute, data, feature_sets, model_name, model_kwargs, fig_pipeline, csv_name
+        executor,
+        attribute,
+        data,
+        feature_sets,
+        model_name,
+        model_kwargs,
+        fig_pipeline,
+        csv_name,
     )
 
     print("Executing pipeline...")
@@ -190,7 +204,7 @@ def model_search(args):
                     args.address,
                     args.fig_pipeline,
                     f"{args.output}.csv",
-                    ret
+                    ret,
                 ),
             )
             p.start()
